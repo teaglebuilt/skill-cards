@@ -1,0 +1,67 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Cron analyzer</title>
+<style>
+  body { font: 14px ui-sans-serif, system-ui; margin: 12px; }
+  input, select, button { font: inherit; padding: 4px 8px; }
+  .row { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; }
+  .row input { flex: 1; }
+  ul { padding-left: 18px; }
+  .desc { color: #555; margin: 0 0 8px; }
+  .err { color: #a32d2d; }
+</style>
+</head>
+<body>
+  <div class="row">
+    <input id="expr" placeholder="0 9 * * 1-5">
+    <select id="tz">
+      <option>America/New_York</option>
+      <option>UTC</option>
+      <option>Europe/London</option>
+      <option>Asia/Tokyo</option>
+    </select>
+    <button id="go">Update</button>
+  </div>
+  <p class="desc" id="desc"></p>
+  <ul id="runs"></ul>
+
+<script>
+  function render(payload) {
+    if (payload.error) {
+      document.getElementById("desc").innerHTML =
+        '<span class="err">' + escapeHtml(payload.error.message) + '</span>';
+      document.getElementById("runs").innerHTML = "";
+      return;
+    }
+    const { description, next_runs, timezone } = payload.result;
+    document.getElementById("desc").textContent = description;
+    document.getElementById("tz").value = timezone;
+    document.getElementById("runs").innerHTML = next_runs
+      .map(r => "<li>" + new Date(r).toLocaleString() + "</li>")
+      .join("");
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  }
+
+  window.addEventListener("message", (e) => {
+    if (e.data && e.data.type === "tool-result") render(e.data);
+  });
+
+  document.getElementById("go").addEventListener("click", () => {
+    window.parent.postMessage({
+      type: "tool-call",
+      tool: "analyze",
+      arguments: {
+        expression: document.getElementById("expr").value,
+        count: 10,
+        timezone: document.getElementById("tz").value,
+      },
+    }, "*");
+  });
+</script>
+</body>
+</html>

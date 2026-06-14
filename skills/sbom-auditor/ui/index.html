@@ -1,0 +1,145 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Permission consent</title>
+<style>
+  body { font: 14px ui-sans-serif, system-ui; margin: 16px; color: #1c1c1a; }
+  .card { background: #fff; border: 0.5px solid #d8d6cf; border-radius: 12px; padding: 16px 20px; }
+  .header { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+  .header h1 { margin: 0; font-size: 15px; font-weight: 500; }
+  .sub { font-size: 13px; color: #73726c; margin: 0 0 16px 0; }
+  .cap { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-top: 0.5px solid #ece9e0; }
+  .cap-body { flex: 1; min-width: 0; }
+  .cap-id { font-family: ui-monospace, monospace; font-size: 12px; background: #f1efe8; padding: 1px 6px; border-radius: 4px; }
+  .cap-target { color: #5f5e5a; font-family: ui-monospace, monospace; font-size: 12px; word-break: break-all; }
+  .cap-rationale { font-size: 12px; color: #73726c; margin: 4px 0 0; }
+  .cap select { font: inherit; font-size: 12px; width: 90px; padding: 4px; }
+  .footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; padding-top: 14px; border-top: 0.5px solid #ece9e0; }
+  .remember { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #5f5e5a; }
+  .actions { display: flex; gap: 8px; }
+  button { font: inherit; font-size: 13px; padding: 6px 12px; border: 0.5px solid #d8d6cf; background: #fff; border-radius: 6px; cursor: pointer; }
+  button.primary { background: #e6f1fb; color: #0c447c; border-color: #b5d4f4; }
+  .empty { color: #888780; padding: 16px 0; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="header">
+    <h1 id="title">Awaiting consent payload...</h1>
+  </div>
+  <p class="sub" id="sub"></p>
+  <div id="caps"></div>
+  <div class="footer">
+    <label class="remember">
+      <input type="checkbox" id="remember">
+      Remember for this session
+    </label>
+    <div class="actions">
+      <button id="cancel">Cancel</button>
+      <button id="allow" class="primary" disabled>Run</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let pending = null;
+
+  function escape(s) {
+    return String(s).replace(/[&<>"]/g, c => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"
+    }[c]));
+  }
+
+  function parsePayload(msgData) {
+    const r = msgData.result;
+    if (!r) return null;
+    if (typeof r === "object" && r.requested) return r;
+    const text = r?.content?.[0]?.text;
+    if (typeof text === "string") {
+      try { return JSON.parse(text); } catch { return null; }
+    }
+    return null;
+  }
+
+  function render() {
+    if (!pending) return;
+    document.getElementById("title").textContent = `${pending.skill} wants access`;
+    document.getElementById("sub").textContent = `Tool: ${pending.tool}`;
+    document.getElementById("allow").disabled = false;
+
+    const caps = document.getElementById("caps");
+    caps.innerHTML = "";
+
+    const rows = [];
+    for (const p of pending.requested.fs ?? []) {
+      rows.push({ kind: "fs", label: "fs:" + p.access.join("+"), target: p.path, rationale: p.rationale, data: p });
+    }
+    for (const p of pending.requested.net ?? []) {
+      rows.push({ kind: "net", label: "net:fetch", target: `${p.host}:${p.ports.join(",")}`, rationale: p.rationale, data: p });
+    }
+    for (const p of pending.requested.env ?? []) {
+      rows.push({ kind: "env", label: "env:read", target: p.name, rationale: p.rationale, data: p });
+    }
+
+    if (rows.length === 0) {
+      caps.innerHTML = '<p class="empty">No capabilities requested.</p>';
+      return;
+    }
+
+    for (const row of rows) {
+      const div = document.createElement("div");
+      div.className = "cap";
+      div.dataset.kind = row.kind;
+      div.dataset.payload = JSON.stringify(row.data);
+      div.innerHTML = `
+        <div class="cap-body">
+          <p style="margin:0 0 2px"><span class="cap-id">${escape(row.label)}</span> <span class="cap-target">${escape(row.target)}</span></p>
+          <p class="cap-rationale">${escape(row.rationale)}</p>
+        </div>
+        <select>
+          <option value="deny" selected>Deny</option>
+          <option value="allow">Allow</option>
+        </select>
+      `;
+      caps.appendChild(div);
+    }
+  }
+
+  function collectGrants() {
+    const grants = { fs: [], net: [], env: [] };
+    document.querySelectorAll(".cap").forEach(div => {
+      const select = div.querySelector("select");
+      if (select.value !== "allow") return;
+      const payload = JSON.parse(div.dataset.payload);
+      grants[div.dataset.kind].push(payload);
+    });
+    return grants;
+  }
+
+  window.addEventListener("message", (e) => {
+    if (!e.data || e.data.type !== "tool-result") return;
+    pending = parsePayload(e.data);
+    if (pending) render();
+  });
+
+  function postResponse(grants, rememberChoice) {
+    window.parent.postMessage({
+      type: "consent-response",
+      inputResponses: {
+        grants: { ...grants, rememberChoice },
+      },
+    }, "*");
+  }
+
+  document.getElementById("allow").addEventListener("click", () => {
+    if (!pending) return;
+    postResponse(collectGrants(), document.getElementById("remember").checked);
+  });
+
+  document.getElementById("cancel").addEventListener("click", () => {
+    postResponse({ fs: [], net: [], env: [] }, false);
+  });
+</script>
+</body>
+</html>

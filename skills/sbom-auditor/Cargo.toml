@@ -1,0 +1,24 @@
+[package]
+name = "sbom-auditor"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wit-bindgen-rt = { version = "0.36", features = ["bitflags"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[package.metadata.component]
+package = "skills:sbom-auditor"
+
+[package.metadata.component.target]
+path = "wit"
+world = "sbom-auditor"
+
+[profile.release]
+opt-level = "s"
+lto = true
+strip = true

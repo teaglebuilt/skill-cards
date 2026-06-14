@@ -1,0 +1,25 @@
+[package]
+name = "cron-analyzer"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wit-bindgen-rt = { version = "0.36", features = ["bitflags"] }
+cron = "0.12"
+chrono = { version = "0.4", default-features = false, features = ["alloc"] }
+chrono-tz = { version = "0.10", default-features = false }
+
+[package.metadata.component]
+package = "skills:cron-analyzer"
+
+[package.metadata.component.target]
+path = "wit"
+world = "cron-analyzer"
+
+[profile.release]
+opt-level = "s"
+lto = true
+strip = true

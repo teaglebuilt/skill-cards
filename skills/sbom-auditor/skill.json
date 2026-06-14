@@ -1,0 +1,47 @@
+{
+  "name": "sbom-auditor",
+  "version": "0.1.0",
+  "component": "component.wasm",
+  "permissions": {
+    "fs": [
+      {
+        "path": "{argument:path}",
+        "access": ["read"],
+        "rationale": "Read the lockfile to enumerate dependencies"
+      }
+    ],
+    "net": [],
+    "env": []
+  },
+  "tools": [
+    {
+      "export": "skills:sbom-auditor/auditor.audit-lockfile",
+      "name": "audit_lockfile",
+      "description": "Scan a package-lock.json for known vulnerabilities",
+      "parameterOrder": ["path"],
+      "inputSchema": {
+        "type": "object",
+        "required": ["path"],
+        "properties": {
+          "path": { "type": "string", "description": "Absolute path to package-lock.json" }
+        }
+      },
+      "_meta": {
+        "ui": { "resourceUri": "ui://sbom-auditor/results" },
+        "consentUi": { "resourceUri": "ui://sbom-auditor/consent" }
+      }
+    }
+  ],
+  "resources": [
+    {
+      "uri": "ui://sbom-auditor/results",
+      "file": "ui/index.html",
+      "mimeType": "text/html"
+    },
+    {
+      "uri": "ui://sbom-auditor/consent",
+      "file": "ui/consent.html",
+      "mimeType": "text/html"
+    }
+  ]
+}

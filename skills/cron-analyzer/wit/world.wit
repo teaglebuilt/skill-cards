@@ -1,0 +1,24 @@
+package skills:cron-analyzer@0.1.0;
+
+interface analyzer {
+  record schedule-info {
+    description: string,
+    next-runs: list<string>,
+    timezone: string,
+  }
+
+  variant analyze-error {
+    invalid-expression(string),
+    invalid-timezone(string),
+  }
+
+  analyze: func(
+    expression: string,
+    count: u32,
+    timezone: string,
+  ) -> result<schedule-info, analyze-error>;
+}
+
+world cron-analyzer {
+  export analyzer;
+}

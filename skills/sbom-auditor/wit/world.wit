@@ -1,0 +1,32 @@
+package skills:sbom-auditor@0.1.0;
+
+interface auditor {
+  enum severity { low, medium, high, critical }
+
+  record vulnerability {
+    id: string,
+    %package: string,
+    version: string,
+    severity: severity,
+    summary: string,
+    fixed-in: option<string>,
+  }
+
+  record audit-report {
+    ecosystem: string,
+    total-deps: u32,
+    vulnerabilities: list<vulnerability>,
+  }
+
+  variant audit-error {
+    file-not-found(string),
+    parse-error(string),
+    unsupported-ecosystem(string),
+  }
+
+  audit-lockfile: func(path: string) -> result<audit-report, audit-error>;
+}
+
+world sbom-auditor {
+  export auditor;
+}

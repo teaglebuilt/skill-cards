@@ -1,0 +1,39 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "ui": "tui",
+  "globalDependencies": ["tsconfig.base.json"],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [
+        "dist/**",
+        "component.wasm",
+        "target/wasm32-wasip2/release/*.wasm"
+      ]
+    },
+    "bundle": {
+      "dependsOn": ["build"],
+      "outputs": ["bundle/**", "*.oci.tar"]
+    },
+    "push": {
+      "dependsOn": ["bundle"],
+      "cache": false,
+      "env": ["OCI_REGISTRY", "OCI_USERNAME", "OCI_PASSWORD"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true,
+      "dependsOn": ["^build"]
+    },
+    "test": {
+      "dependsOn": ["build"]
+    },
+    "typecheck": {
+      "dependsOn": ["^build"]
+    },
+    "lint": {},
+    "clean": {
+      "cache": false
+    }
+  }
+}

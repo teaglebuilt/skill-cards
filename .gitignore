@@ -1,0 +1,13 @@
+node_modules/
+.turbo/
+dist/
+target/
+*.wasm
+*.oci.tar
+bundle/
+.DS_Store
+.env
+.env.local
+*.tsbuildinfo
+TODO.md
+docs/adr/*.md
