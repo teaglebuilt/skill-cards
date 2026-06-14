@@ -4,6 +4,8 @@ A demo of portable, sandboxed tools for AI agents — built by composing two ort
 
 This repo is the working argument behind a thesis about the new design space MCP's extension framework enables. Two example skills, a sandboxed Wasm runtime, a stateless MCP server, and a TanStack Start web app that proves the host side works outside the existing major MCP clients.
 
+![Skill Card Example](./docs/assets/consent-component.png)
+
 ## What
 
 A **skill card** is a single OCI artifact bundling four things: a WebAssembly Component (the logic), a WIT interface (the typed contract), one or more UI resources (HTML surfaces the user interacts with), and a permission manifest (capabilities the component needs, with rationales). Author once, push to a registry, and any host that implements MCP Apps and a Wasm runtime can pull it down, execute it sandboxed, and render its UI inline in the conversation. Closer to a browser tab than installing a cli.
